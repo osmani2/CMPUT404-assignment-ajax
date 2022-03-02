@@ -74,9 +74,8 @@ function sendJSONXMLHTTPRequest(url, objects, callback) {
 world = {};
 
 //DONE: TODO Make this prettier!
-// Cloud - https://www.pngitem.com/middle/TxhRRx_cloud-animated-clipart-free-best-transparent-png-cute/
-// Sun - 
-function drawCircle(context,entity, prevEntity) {
+// Cloud - https://www.pngitem.com/middle/TxhRRx_cloud-animated-clipart-free-best-transparent-png-cute/ 
+function drawCircle(context,entity) {
     with(context) {
         beginPath();              
         lineWidth = 30;
@@ -116,16 +115,9 @@ function clearFrame() {
 // This actually draws the frame
 function renderFrame() {
     clearFrame();
-    i=0;
-    prevKey='';
     for (var key in world) {
         var entity = world[key];
-        if(prevKey===''){
-            drawCircle(context,prepEntity(entity),prepEntity(entity));
-        }else{
-            drawCircle(context,prepEntity(entity),prepEntity(world[prevKey]));
-        }
-        prevKey=key;   
+        drawCircle(context,prepEntity(entity));
     }
 }
 
