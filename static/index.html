@@ -24,6 +24,11 @@
   </head> 
   <body bgcolor="black" height="100%" width="100%"> 
     <canvas id="c" width="100%" height="100%" style="-webkit-tap-highlight-color: transparent;"></canvas> 
+    <div style="display:none;">
+        <img id="cloud"
+             src="cloud.png"
+             width="100%">
+      </div>
     <script>
 var canvas = document.getElementById('c');
 var host = window.location.host;
@@ -38,8 +43,11 @@ function sendJSONXMLHTTPRequest(url, objects, callback) {
         if (xhr.readyState==4) {
             try {
                 if (xhr.status==200) {
-                    //XXX: parse some JSON from the request!
-                    //XXX: Pass the data to the callback!
+                    //DONE: parse some JSON from the request!
+                    //DONE: Pass the data to the callback!
+                    text=xhr.responseText;
+                    var newObj=JSON.parse(text);
+                    callback(newObj);
                 }
             } 
             catch(e) {
@@ -47,32 +55,43 @@ function sendJSONXMLHTTPRequest(url, objects, callback) {
             }
         }
     };
-    //XXX: POST to a URL
-    //XXX: set the mimetype and the accept headers!
-    // Remember to use application/json !
+    //DONE: POST to a URL
+    //DONE: set the mimetype and the accept headers!
+    // Remember to use application/json 
+    body = JSON.stringify(object);
+    xhr.overrideMimeType("application/json");
+    
+    xhr.open("post", url);
+
+    xhr.setRequestHeader("Accept","application/json");
+    xhr.setRequestHeader("Content-Type","application/json");
+    xhr.setRequestHeader("Content-Length",body.length);
+
+    xhr.send(body);
 }
 
 
 world = {};
 
-//XXX: TODO Make this prettier!
-function drawCircle(context,entity) {
+//DONE: TODO Make this prettier!
+// Cloud - https://www.pngitem.com/middle/TxhRRx_cloud-animated-clipart-free-best-transparent-png-cute/
+// Sun - 
+function drawCircle(context,entity, prevEntity) {
     with(context) {
         beginPath();              
-        lineWidth = 3;
+        lineWidth = 30;
         var x = entity["x"];
         var y = entity["y"];
-        //moveTo(x,y);
-        fillStyle = entity["colour"];
-        strokeStyle = fillStyle;
-        arc(x, y, (entity["radius"])?entity["radius"]:50, 0, 2.0 * Math.PI, false);  
-        stroke();                                
+        var img = document.getElementById("cloud");
+        drawImage(img, x-75, y-50,150,100);
+        stroke();
+           
     }
 }
 
 function prepEntity(entity) {
     if (!entity["colour"]) {
-        entity["colour"] = "#FF0000";
+        entity["colour"] = "transparent";
     }
     if (!entity["radius"]) {
         entity["radius"] = 50;
@@ -83,8 +102,13 @@ function prepEntity(entity) {
 function clearFrame() {
     with(context) {
 	moveTo(0,0);
-	fillStyle = "#000";
+	fillStyle = "#6dadcf";
 	fillRect(0,0,W,H);
+
+    fillStyle = "#ffcd03";
+    arc(200, 200, 100, 0, 2 * Math.PI);
+    fill();
+
     }
 
 }
@@ -92,9 +116,16 @@ function clearFrame() {
 // This actually draws the frame
 function renderFrame() {
     clearFrame();
+    i=0;
+    prevKey='';
     for (var key in world) {
         var entity = world[key];
-        drawCircle(context,prepEntity(entity));
+        if(prevKey===''){
+            drawCircle(context,prepEntity(entity),prepEntity(entity));
+        }else{
+            drawCircle(context,prepEntity(entity),prepEntity(world[prevKey]));
+        }
+        prevKey=key;   
     }
 }
 
@@ -137,7 +168,8 @@ function getPosition(e) {
 function addEntity(entity, data) {
     world[entity] = data;
     drawNextFrame(); // (but should we?)
-    //XXX: Send a XHTML Request that updates the entity you just  modified!
+    //DONE: Send a XHTML Request that updates the entity you just  modified!
+    sendJSONXMLHTTPRequest(`/entity/${entity}`,data, (newObj)=>{});
 
 }
 
@@ -247,11 +279,11 @@ mouse = (function() {
 // Add the application specific mouse listeners!
 //XXX: TODO Make these prettier!
 mouse.mousedowners.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'blue'});
+    addEntityWithoutName({'x':x,'y':y});
 });
 
 mouse.mouseuppers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'red'});
+    addEntityWithoutName({'x':x,'y':y});
 });
 
 mouse.mousedraggers.push(function(x,y,clicked,e) {
@@ -261,8 +293,9 @@ mouse.mousedraggers.push(function(x,y,clicked,e) {
 
 
 function update() {
-    //XXX: TODO Get the world from the webservice using a XMLHTTPRequest
+    //DONE: TODO Get the world from the webservice using a XMLHTTPRequest
     drawFrame();
+    sendJSONXMLHTTPRequest(`/world`,undefined,(newObj)=>{world=newObj});
 }
 
 // 30 frames per second
